@@ -1,0 +1,11 @@
+{
+  "name": "bluetwine",
+  "version": "1.0.0",
+  "description": "bluetooth web link library with serial and json support over BLE",
+  "main": "BlueTwine.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "BSD-2-Clause"
+}
