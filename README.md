@@ -1,22 +1,32 @@
-# Bluetooth Web Serial Starter
+[![License](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
+[![NPM version](https://img.shields.io/npm/v/bitwrench.svg?style=flat-square)](https://www.npmjs.com/package/bluetwine)
+[![Build Status](https://travis-ci.org/deftio/bluetwine.svg?branch=master)](https://travis-ci.org/deftio/bluetwine)
+
+[![BlueTwine](./images/bluetwine.png)](https://www.github.com/deftio/bluetwine)
+
+# BlueTwine: A Bluetooth Web Serial Starter Libary
+
 M A Chatterjee
 2020 November 25
 
 ## Intro
 This repo uses bluetooth web to talk to a IOT service in close range.  Since Bluetooth can be very complicated to set up I chose to make am example using bluetooth serial and JSON to simplify tasks for someone making a quick demo.  
 
-
+TBD (not released just yet)
 
 ## Web code
 Go to this github page or clone the repo and run from localhost.  
 
 To use bluetooth web you must a browser with web blooth support such as chrome or edge.  Since bluetooth serial access hardware the user must click on the connect button and the page must be served over either https:// or 
 
-## Client code
+## Client code setup
+To use BlueTwine you'll need a device sending data over Bluetooth Low Energy and it needs to be discoverable.
+
+
+
+# Supported Boards & Set up
 The client code here relies on adafruit circuitpython.  I used the Adafruit Feather Sense board (url) which also supports many sensors.
-
 To use the client code, clone the repo.  Then install circuitpythone (5.3x or later) on your board.  
-
 
 
 ## Other boards && Dependancies
