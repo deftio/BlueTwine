@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+<!---
+Web Bluetooth UART page for debugging JSON link data over web bt serial.
+BSD-2
+M A Chatterjee 2020 - December 
+see github for details, client demo code etc.
+
+-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./libs/bitwrench.min.js"  ></script> <!-- see https://github.com/deftio/bitwrench or npm  -->
+<script src="./libs/BlueTwine.js"></script>
+<!--
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+-->
+<title>Bluetooth BLE Stats Demo</title>
+<style>
+.timeStamp {
+  color : darkorange;
+}
+
+pre {
+    word-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+button {
+    background-color: lightgoldenrodyellow;
+    padding : 9px;
+    border-radius: 4px;
+    color : #222;
+    border: 1px solid black; 
+    font-size : 12pt;
+}
+button:hover {
+    background-color: darkgray;
+}
+
+[selected=checked] {
+    background-color: darkgray;
+    text-decoration: line-through;
+    color : #ddd;
+}
+.boxHeight {
+    height: 100%;
+    padding: 5px;
+    border-radius: 5px;
+    font-size: 9pt;
+    border: 1px solid black;
+
+}
+
+html {
+    width: 100%;
+}
+body {
+    background-color: #dde;
+    margin-top: 1%;
+    margin : 2% auto;
+    width: 100%;
+    min-height: 98%;
+}
+.hbox {
+    height: 50%;
+}
+</style>
+</head>
+<body class="bw-font-sans-serif">
+<h2>Web Bluetooth Serial UART Test</h2>  
+Using Gatt Emulation<br><br>
+<button id="connect" onclick="doConnect()" >Connect</button>
+<button id="disconnect" onclick="doDisconnect()" >Disconnect</button>
+<button id="timestamps" onclick="timeStampToggle()">Timestamps</button>
+<button id="clear" onclick="clearData()">Clear Data</button>
+<button id="pause" onclick="pause()">Pause Display</button>
+<hr>
+
+<div class="container bw-row ">
+    <div class="bw-col-4 boxHeight">
+        <h3>Connection Status</h3>
+        <pre id="statusDiv" class="dataBox hbox"></pre>
+        <h3>Stats</h3>
+        <pre id="statsDiv" class="dataBox hbox"></pre>
+    </div>
+    <div class="bw-col-3 boxHeight">
+        <h3>Raw Data Received</h3>
+        <pre id="rawDiv" class="dataBox"></pre>
+    </div>
+    <div class="bw-col-5 boxHeight">
+        <h3>Last JSON Received</h3>
+        <pre id="jsonDiv" class="dataBox"></pre>
+    </div>
+</div>
+<script>
+bw.DOMInsertElement("head",bw.htmlFavicon('⚡',"blue"))
+
+// web page utility functions...
+// ==================
+// clear data on all divs
+var clearData = function () {
+  ["#statusDiv","#rawDiv","#jsonDiv"].map(x => bw.DOM(x,""));
+}
+
+// ==================
+// pause display updates
+var pause = function () {
+    gPageVars["pause"] = (gPageVars["pause"] == false);
+    bw.DOM("#pause")[0].setAttribute("selected",(gPageVars["pause"] ? "":  "checked")); // button checked
+}
+
+var timeStampToggle = function () {
+    if (bw.DOM("#timeShow").length > 0)   // if it exists..
+        bw.DOM("#timeShow")[0].innerHTML = (String(bw.DOM("#timeShow")[0].innerHTML.length) < 2) ? ".timeShow{display:none}" : "";
+    else 
+        bw.DOMInsertElement(bw.DOM("head")[0],{t:"style",a:{id:"timeShow"},c:".timeShow{display:none}"}) // create this first time
+    let doShow = (bw.DOM("#timeShow")[0].innerHTML.length < 2);
+
+    bw.DOM("#timestamps")[0].setAttribute("selected",(doShow ? "":  "checked"));
+
+    return doShow ; // returns whether timeStamps are currently displayed.
+}
+// ==================
+// write data to divs
+// #statusDiv #rawDiv #jsonDiv
+var writeDataDiv = function(data, div, opts ) {
+    const els = bw.DOM(div);
+    let i, dopts = {
+        timeStart      : 0,       //
+        timePad        : 6,       // spaces to pad timeStamp if used
+        addTimeStamp   : true,    // if true then  add <span .. > with timestamp value
+        replaceAll     : false,   // replace entire div contents instead of appending new content
+        autoJSON       : false,   // replace objects with pretty printed JSON
+        lf             : "\n",    // added afeter every line.  set to "" to suppres, or change to <br> if writing non pre-wrap elements
+        maxHTMLBufLen  : 200      // max HTML buffer elements before dropping elements (list too long)
+    }; // default add time stamp div
+
+    for (i in opts)
+        dopts[i] = opts[i];
+    if (gPageVars["pause"] != false) {
+        if (els.length == 1) { // there was exactly one matching element (e.g. #myDiv or .classMyClass or a real DOM element)
+            let el   = els[0];
+            let ts   = dopts.addTimeStamp ? "<span class='timeStamp timeShow'>"+bw.padNum(((new Date()).getTime() - dopts.timeStart),dopts.timePad)+":&nbsp;</span>" : "";
+            let html = dopts.autoJSON ? bw.htmlJSON(data) : data;
+            let lineEntry = "<span class='lineEntry'>"+ts + html + dopts.lf +"</span>";
+            if (dopts.replaceAll) {
+                el.innerHTML  = lineEntry;
+            } else {
+                if (el.children.length > dopts.maxHTMLBufLen)
+                    el.removeChild(el.childNodes[0])
+                el.innerHTML +=  lineEntry;
+            }            
+            return true;
+        }
+    }
+    return false;
+}
+
+var logStatus = function(s) {
+    writeDataDiv(s,"#statusDiv",{timeStampValue: gPageVars.startTime});
+    bw.DOM("#statsDiv",bw.htmlJSON(blueuart.stats));
+}
+
+// end web page display utilities  start actual BT code
+var gPageVars = {
+    startTime: (new Date()).getTime(),
+};
+
+
+var blueuart = new BlueTwine(); // create a connection instance
+blueuart.log = logStatus; // set up call back for logging (optional)
+blueuart.onStringChunk = function(data){  // rawString data call back
+    writeDataDiv(data,"#rawDiv", {timeStart: gPageVars.startTime}); 
+    bw.DOM("#statsDiv",bw.htmlJSON(blueuart.stats));
+}
+// connect to buttons
+function doConnect()    { 
+    blueuart.connectToDevice();  // connnect device and start service
+}
+function doDisconnect() { blueuart.disconnect()}
+
+
+
+</script>
+
+</body>
+</html>
