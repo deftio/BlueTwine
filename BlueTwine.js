@@ -24,7 +24,10 @@
     BSD 2 License (see LICENSE.txt in root folder)
  
  */
-BlueTwine = function(serviceUUID, TxUUID, RxUUID)  {
+//"use strict";
+
+ /*eslint no-unused-vars: ["error", { "varsIgnorePattern": "BlueTwine" }]*/
+ BlueTwine = function(serviceUUID, TxUUID, RxUUID)  {
 
     // default UUIDs for serial service 
     // can overide with setUUIDs()  to use any service id & characteristic as long as the BLE device is setup on that service/char
@@ -88,8 +91,8 @@ BlueTwine = function(serviceUUID, TxUUID, RxUUID)  {
     
     // reset a stat of a specific key or array of keys
     this.statsClr   = function(key) { 
-        if (typeof key == "array")
-            key.forEach(k =>this.stats[k] = 0)
+        if ( this.typeOf(key) == "array")
+            key.forEach( function(k) {this.stats[k] = 0})
         else
             this.stats[key] = 0
     } 
@@ -117,7 +120,7 @@ BlueTwine = function(serviceUUID, TxUUID, RxUUID)  {
 
             this.log("Attemtping to connecting to device id: " + this.serviceUUID);
             
-            let servicesList = typeof (this.serviceUUID) == "array" ? this.serviceUUID : [this.serviceUUID]; // todo 
+            let servicesList = this.typeOf (this.serviceUUID) == "array" ? this.serviceUUID : [this.serviceUUID]; // todo 
             let options = { filters: [{services: servicesList}]}; 
 
             this.device = await navigator.bluetooth.requestDevice(options);
@@ -227,12 +230,11 @@ BlueTwine = function(serviceUUID, TxUUID, RxUUID)  {
             this.onDataChunk(value);
         }
         if (this.onStringChunk) {
-            let a = [];
             // Convert raw data bytes to hex values just for the sake of showing something.
             // In the "real" world, you'd use data.getUint8, data.getUint16 or even
             // TextDecoder to process raw data bytes.
-            for (let i = 0; i < value.byteLength; i++) { }
-                const strvalue = new TextDecoder().decode(event.target.value); // convert to a real js string
+            //for (let i = 0; i < value.byteLength; i++) { }
+            const strvalue = new TextDecoder().decode(event.target.value); // convert to a real js string
             
             if (this.onStringChunk(strvalue))
                 this.onStringChunk(strvalue);
@@ -295,6 +297,17 @@ BlueTwine = function(serviceUUID, TxUUID, RxUUID)  {
         return (types.indexOf(this.typeOf(x)) >= 0);
     }
 
+    this.version = function() {
+        var v = {
+            "version"   : "1.0.2", 
+            "about"     : "BlueTwine is a library for wrapping web bluetooth.", 
+            "copy"      : "(c) M A Chatterjee deftio (at) deftio (dot) com",    
+            "url"       : "http://github.com/deftio/BlueTwine",
+            "license"   : "BSD-2-Clause"
+        };
+        return v;
+    }
+
     // bindings for callback "this" contexts.
     this.handleRXNotify = this.handleRXNotify.bind(this);
     this.onDisconnected = this.onDisconnected.bind(this);
@@ -302,6 +315,8 @@ BlueTwine = function(serviceUUID, TxUUID, RxUUID)  {
     _statsInc = _statsInc.bind(this);
     this.typeOf =this.typeOf.bind(this);
     this.isType =this.isType.bind(this);
+
+    return this;
 } // end BLESerialUart definition
 
 

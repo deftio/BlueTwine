@@ -1,11 +1,40 @@
 {
-  "name": "bluetwine",
-  "version": "1.0.0",
-  "description": "bluetooth web link library with serial and json support over BLE",
-  "main": "BlueTwine.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "BSD-2-Clause"
+	"name": "bluetwine",
+	"version": "1.0.2",
+	"description": "bluetooth web link library with serial and json support over BLE",
+	"main": "BlueTwine.js",
+	"keywords": [
+		"bluetooth",
+		"serial",
+		"BLE",
+		"JSON"
+	],
+	"author": "Manu Chatterjee <deftio@deftio.com> (https://deftio.com/)",
+	"license": "BSD-2-Clause",
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/deftio/bluetwine.git"
+	},
+	"bugs": {
+		"url": "https://github.com/deftio/bluetwine/issues"
+	},
+	"scripts": {
+		"clean": "rm bluetwine*.tgz -f",
+		"cleanbuild": "npm run clean && npm run clean && npm run build",
+		"build": "./tools/update-package.js package.json package.json && ./node_modules/uglify-js/bin/uglifyjs BlueTwine.js -o BlueTwine.min.js && npm pack",
+		"lint": "./node_modules/.bin/eslint BlueTwine.js",
+		"instrument-bt": "./node_modules/nyc/bin/nyc.js instrument ./BlueTwine.js ./instr_tmp",
+		"test": "npm run instrument-bt && nyc --reporter=text --cache=false mocha ./test/BlueTwine-Test.js -r jsdom-global/"
+	},
+	"devDependencies": {
+		"eslint": "^7.16.0",
+		"uglify-js": "^3.12.3"
+	},
+	"dependencies": {
+		"chai": "^4.2.0",
+		"jsdom": "^16.4.0",
+		"jsdom-global": "^3.0.2",
+		"mocha": "^8.2.1",
+		"nyc": "^15.1.0"
+	}
 }

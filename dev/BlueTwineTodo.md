@@ -11,4 +11,3 @@
 
 
 
-[![BlueTwine](./images/bluetwine.png)](https://www.github.com/deftio/bluetwine)
