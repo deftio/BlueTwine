@@ -109,7 +109,7 @@ test built-in basic typeof operator
 	];
   
   	tests.forEach(function(test) {
-    	it("bw.typeOf (internal type operator)  " + test.args.length + " args", function() {
+    	it("typeOf (internal type operator)  " + test.args.length + " args", function() {
 	      	var res = bluetwine.typeOf.apply(null, test.args);
 	      	assert.equal(res, test.expected);
     	});
@@ -127,6 +127,64 @@ describe("#blueuart.isWebBluetoothAvailable()returns whether bt is available at 
 });
 */
 // ================================================================
+describe("test encode decode array <---> arraybufferu8", function() {
+	
+	var fullRange = new Array(256),i;
+	for (i=0; i< fullRange.length; i++)
+		fullRange[i] = i;
+
+	var tests = [
+		{args: [[1,2,3,4,0x7c,0x7d,0x7e,0x7f,0xfe,0xff]],  expected: [1,2,3,4,0x7c,0x7d,0x7e,0x7f,0xfe,0xff]},
+		{args: [fullRange],  expected: fullRange},
+	];
+  
+  	tests.forEach(function(test) {
+    	it("test enc/dec array to array buffer u8  " + test.args.length + " args", function() {
+	      	var res = bluetwine.ab2array (bluetwine.arrayu82ab.apply(null, test.args));
+	      	assert.deepEqual(res, test.expected);
+    	});
+ 	});
+});
+
+// ================================================================
+
+describe("test encode decode byteEncPPP <===> byteDecPPP", function() {
+	
+	var fullRange = new Array(256),i;
+	for (i=0; i< fullRange.length; i++)
+		fullRange[i] = i;
+
+	var tests = [
+		{args: [[1,2,3,4,0x7c,0x7d,0x7e,0x7f,0xfe,0xff]],  expected: [1,2,3,4,0x7c,0x7d,0x7e,0x7f,0xfe,0xff]},
+		{args: [fullRange],  expected: fullRange},
+	];
+  
+  	tests.forEach(function(test) {
+    	it("test enc/dec array to PPP byte stuffing escapes  " + test.args.length + " args", function() {
+
+	      	var res = bluetwine.ab2array (bluetwine.byteDecPPP (bluetwine.byteEncPPP(bluetwine.arrayu82ab.apply(null,test.args))));
+	      	assert.deepEqual(res, test.expected);
+    	});
+ 	});
+});
+
+// ================================================================
+describe("test encode decode str <===> ab", function() {
+
+	var tests = [
+		{args: ["This is a test of some encoded string \x7e \r\b\n"],  expected: ["This is a test of some encoded string \x7e \r\b\n"]},
+		
+	];
+  
+  	tests.forEach(function(test) {
+    	it("test enc/dec array to PPP byte stuffing escapes  " + test.args.length + " args", function() {
+
+	      	var res = bluetwine.ab2str(bluetwine.str2ab.apply(null,test.args));
+	      	assert.equal(res, test.expected);
+    	});
+ 	});
+});
+// ================================================================
 describe("#version() returns version info at runtime", function() {
 	it("version()   " + 0 + " args", function() {
 	      	var res = bluetwine.version();
@@ -138,4 +196,3 @@ describe("#version() returns version info at runtime", function() {
 
     	});
 });
-

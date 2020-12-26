@@ -26,6 +26,7 @@
  */
 //"use strict";
 
+
  /*eslint no-unused-vars: ["error", { "varsIgnorePattern": "BlueTwine" }]*/
  BlueTwine = function(serviceUUID, TxUUID, RxUUID)  {
 
@@ -47,8 +48,9 @@
     this.charRxService = null; // read data back (raw bytes, note use callback)
     this.RxmaxFrameBytes = 128000; // max num bytes we'll buffer for a frame or JSON. 
     this.RxFrameBytesBuf = [];   // buffer for data we're accumulating
-    this.TxMaxFrameBytes= 20;    // chunk size to break up Tx packets (20 is BLE hard default, if larger is needed look at BLE long writes)
+    this.TxMaxFrameBytes= 20;    // chunk size to break up Tx packets (20 is BLE default, if larger is needed look at BLE long writes)
     this.stats         =   {};   // stats object
+
     
     //onEvent style callbacks for data handling
     this.onDataChunk   = null; // call back for onRxNotify data available (returns ArrayBuffer)
@@ -59,8 +61,12 @@
     this.onStringFrame = null; // callback for accumulated message as string (requires sender framing support) returns JS string
     this.onJSON        = null; // callback for receiving JSON (requires sender framing, json stringification support) returns JSON parsed object
 
+    this.serialFrSSeq  ="";
+    this.serialFrESeq  ="\n";
+    this.serialFrEscSeq="\\";
+
     //========================================================
-    // array buffer <===> string conversion utils  
+    // js array buffer conversion utils  
     this.ab2str = function (buf) {
         return String.fromCharCode.apply(null, new Uint8Array(buf));
     }
@@ -73,22 +79,47 @@
         return buf;
     }
 
+    this.ab2array = function (buf) {
+        var bufView = new Uint8Array(buf);
+        var z = new Array(bufView.Length)
+        bufView.map(function(x,i){z[i]=x;})
+        return z;
+    }
+
+    this.arrayu82ab = function (arr) {
+        var buf = new ArrayBuffer(arr.length);
+        var bufView = new Uint8Array(buf);
+        //for (var i=0; i<arr.length; i++)
+        //    bufView[i] = arr[i] & 0xff;
+        arr.map(function(x,i){bufView[i] = x;})
+        return buf;
+    }
+
+    this.arrEq    = function (a,b) {
+        if (a.length != b.length)
+            return false;
+        for (i=0; i < a.length; i++)
+            if (a[i] != b[i])
+                return false;
+        return true;
+    }
     //========================================================
+    //stats functions
+    //Note if statsEnable(false) is called stats udpates are never called 
     this.statsCopy   = function() {return JSON.parse(JSON.stringify(this.stats))} // get a copy of the stats at a moment in time
     this.statsReset  = function() {this.stats={}}
     this.statsEnable = function(enable) {_statsInc = enable ? this.statsInc : function (){};};   // enable stats
 
-
-    this.statsInc   = function(key, val, set) { 
-        val = ((typeof val) == "number") ? val : 1 ;
+    this.statsInc    = function(key, val, set) { 
+        //val = ((typeof val) == "number") ? val : 1 ;
         if (set == true)
             this.stats[key] = val;  // set instead of increment
         else
             this.stats[key] = (key in (this.stats)) ? this.stats[key]+val : val;
     } 
-    var _statsInc   = this.statsInc;
-    
-    
+
+    var _statsInc   = this.statsInc; // internal state var
+        
     // reset a stat of a specific key or array of keys
     this.statsClr   = function(key) { 
         if ( this.typeOf(key) == "array")
@@ -221,6 +252,7 @@
         this.log("Rx callback removed");
     }
 
+    //todo add which service
     this.handleRXNotify = function(event) {
         let value = event.target.value;  // this is an array buffer with raw bytes (*not* a string)
         _statsInc("rx_frames");
@@ -241,6 +273,11 @@
         }
         // todo
         //this.onDataFrame this.onStringFrame, this.onJSON
+        if (this.onDataFrame || this.onStringFrame || this.onJSON) {
+            //state handling
+            
+
+        }
     }
 
     this.disconnect = function() {
@@ -266,7 +303,31 @@
         }
     }
 
-      
+    /*****************************
+    * bytestuffing 
+    * ArrayBuffer ==> stuffed ArrrayBuffer
+    */
+    this.byteEncPPP = function (x) {
+        let v = new Uint8Array (x), r=[];
+        for (let i=0; i< v.length; i++) {
+            if ((v[i] == 0x7e) || (v[i] == 0x7d ))
+                { r.push (0x7e); r.push(v[i] ^ 0x20); }
+            else
+                { r.push (v[i]);}
+        }
+        return this.arrayu82ab(r); 
+    }
+
+    this.byteDecPPP = function (x) {
+        let v = new Uint8Array (x), r=[];
+        for (let i=0; i< v.length; i++) {
+            if ((v[i] == 0x7e) || (v[i] == 0x7d ))
+                { i++; r.push(v[i] ^ 0x20); }
+            else
+                { r.push (v[i]);}
+        }
+        return this.arrayu82ab(r); 
+    }
     /*****************************
      * Usable typeof operator.  (handles null, functions, dates, Class names etc)
      * Borrowed from bitwrench.js (github.com/deftio/bitwrench or npm bitwrench 
@@ -315,10 +376,15 @@
     _statsInc = _statsInc.bind(this);
     this.typeOf =this.typeOf.bind(this);
     this.isType =this.isType.bind(this);
+    this.byteDecPPP = this.byteDecPPP.bind(this);
+    this.byteEncPPP = this.byteEncPPP.bind(this);
 
     return this;
 } // end BLESerialUart definition
 
+if (typeof module != "undefined") {
+    module["exports"]= BlueTwine;
+}
 
 /**
  * Function Description todo: add fn docs
